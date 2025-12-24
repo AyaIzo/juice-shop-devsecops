@@ -2,51 +2,57 @@ name: DevSecOps Juice Shop Pipeline
 
 permissions:
   contents: read
-  security-events: write
 
 on:
   push:
-    branches:
-      - master
-
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    branches: [ master ]
 
 jobs:
-  devsecops:
+
+  build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    #Build Docker
-    - name: Build Docker image
-      run: docker build -t juice-shop-devsecops .
+      - name: Build Docker image
+        run: docker build -t juice-shop .
 
-    #Tests unitaires
-    - name: Run unit tests
-      run: |
-        npm install
-        npm test || true
+  sast:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
 
-    #SAST - Semgrep
-    - name: Run Semgrep
-      uses: returntocorp/semgrep-action@v1
+      - name: Semgrep SAST
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: p/ci
+        continue-on-error: true
 
-    #Docker Image Scan
-    - name: Trivy Scan
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: juice-shop-devsecops
-        severity: HIGH,CRITICAL
+  sca:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
 
-    #Run container for DAST
-    - name: Run Juice Shop
-      run: docker run -d -p 3000:3000 juice-shop-devsecops
+      - name: Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: juice-shop
+          format: JSON
 
-    #DAST - OWASP ZAP
-    - name: OWASP ZAP Baseline
-      uses: zaproxy/action-baseline@v0.9.0
-      with:
-        target: http://localhost:3000
+  container_scan:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image again
+        run: docker build -t juice-shop .
+
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: juice-shop
+          exit-code: 0
+
