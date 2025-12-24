@@ -12,14 +12,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-  #Github token
-    - name: Login to GHCR
-  uses: docker/login-action@v3
-  with:
-    registry: ghcr.io
-    username: ${{ github.actor }}
-    password: ${{ secrets.GITHUB_TOKEN }}
-
     #Build Docker
     - name: Build Docker image
       run: docker build -t juice-shop-devsecops .
