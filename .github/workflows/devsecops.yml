@@ -2,7 +2,7 @@ name: DevSecOps Juice Shop Pipeline
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ master ]
 
 jobs:
   devsecops:
