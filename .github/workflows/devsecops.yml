@@ -2,6 +2,7 @@ name: DevSecOps Juice Shop Pipeline
 
 permissions:
   contents: read
+  security-events: write
 
 on:
   push:
@@ -17,7 +18,7 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t juice-shop .
-
+  
   sast:
     runs-on: ubuntu-latest
     needs: build
@@ -57,34 +58,34 @@ jobs:
           image-ref: juice-shop
           exit-code: 0
 
-secrets_scan:
-  runs-on: ubuntu-latest
-  needs: build
+  secrets_scan:
+    runs-on: ubuntu-latest
+    needs: build
 
-  steps:
-    - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Gitleaks secrets scan
-      uses: gitleaks/gitleaks-action@v2
-      continue-on-error: true
+      - name: Gitleaks secrets scan
+        uses: gitleaks/gitleaks-action@v2
+        continue-on-error: true
 
-dast:
-  runs-on: ubuntu-latest
-  needs: build
+  dast:
+    runs-on: ubuntu-latest
+    needs: build
 
-  steps:
-    - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Build Juice Shop image
-      run: docker build -t juice-shop .
+      - name: Build Juice Shop image
+        run: docker build -t juice-shop .
 
-    - name: Run Juice Shop container
-      run: |
-        docker run -d -p 3001:3000 juice-shop
-        sleep 40
+      - name: Run Juice Shop container
+        run: |
+          docker run -d -p 3001:3000 juice-shop
+          sleep 40
 
-    - name: OWASP ZAP baseline scan
-      uses: zaproxy/action-baseline@v0.10.0
-      with:
-        target: http://localhost:3001
-      continue-on-error: true
+      - name: OWASP ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.10.0
+        with:
+          target: http://localhost:3001
+        continue-on-error: true
